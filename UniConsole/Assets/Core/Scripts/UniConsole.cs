@@ -49,7 +49,7 @@ public class UniConsole : MonoBehaviour
 
     public void ExecuteCommand(string command)
     {
-        var available = Reflector.GetCommands();
+        var available = Reflector.Commands;
         string[] commandParts = command.Split(' ');
         string commandName = commandParts[0].Replace(" ", "");
 
@@ -106,6 +106,6 @@ public class UniConsole : MonoBehaviour
 
     [Command]
     public static string Help()
-        => "Available Commands:\n" + string.Join("\n", Reflector.GetCommands().Select(cmd =>
+        => "Available Commands:\n" + string.Join("\n", Reflector.Commands.Select(cmd =>
             $"{cmd.Name} {string.Join(" ", cmd.GetParameters().Select(p => p.ParameterType.Name))}"));
 }
