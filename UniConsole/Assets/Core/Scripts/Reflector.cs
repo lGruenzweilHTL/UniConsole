@@ -28,7 +28,7 @@ public static class Reflector
         foreach (var type in types)
         {
             // Get all methods in the class
-            var typeMethods = type.GetMethods(BindingFlags.Static);
+            var typeMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
             foreach (var method in typeMethods)
             {
                 // Check if the method has the Command attribute

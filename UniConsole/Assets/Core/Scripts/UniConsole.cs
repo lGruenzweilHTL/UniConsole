@@ -9,14 +9,13 @@ public class UniConsole : MonoBehaviour
 {
     [SerializeField] private TMP_Text logText;
     [SerializeField] private TMP_InputField inputField;
-    
+
     private readonly List<string> commandHistory = new();
     private int commandHistoryIndex = 0;
 
     private void Awake()
     {
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
-        Log("> ");
     }
 
     private void Update()
@@ -38,10 +37,10 @@ public class UniConsole : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Return))
         {
             ExecuteCommand(command);
-            
+
             commandHistory.Add(command);
             commandHistoryIndex = commandHistory.Count;
-            
+
             inputField.text = "";
             inputField.ActivateInputField();
         }
@@ -63,19 +62,30 @@ public class UniConsole : MonoBehaviour
         {
             if (method.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase))
             {
-                var parameters = ParseParameters(commandParts[1..], method);
-                var result = method.Invoke(null, parameters);
-                if (result != null) TerminalLog(command, result);
+                try
+                {
+                    object[] parameters = ParseParameters(commandParts[1..], method);
+                    ParameterInfo[] expectedParameters = method.GetParameters();
+                    object result = method.Invoke(null, parameters);
+                    if (result != null)
+                        TerminalLog(command, result);
+                }
+                catch (Exception)
+                {
+                    TerminalLog(command, "Invalid number of arguments", LogType.Error);
+                }
+
                 return;
             }
         }
 
-        TerminalLog(command, command);
+        Log(command);
     }
 
     private object[] ParseParameters(string[] parameters, MethodInfo method)
     {
-        if (parameters.Length == 0) return null; // Invoke with no parameters
+        if (parameters.Length == 0)
+            return null; // Invoke with no parameters
 
         object[] parsedParameters = new object[parameters.Length];
         Type[] targetTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
@@ -90,13 +100,30 @@ public class UniConsole : MonoBehaviour
         return parsedParameters;
     }
 
-    private void TerminalLog(object command, object result)
+    private void TerminalLog(object command, object result, LogType logType = LogType.Message)
     {
-        Log($"{command}\n{result}\n> ");
+        string log = $"> {command}\n{result}";
+
+        if (logType == LogType.Message)
+            Log(log);
+        else if (logType == LogType.Warning)
+            LogWarning(log);
+        else if (logType == LogType.Error)
+            LogError(log);
+        else
+            throw new ArgumentOutOfRangeException();
     }
     private void Log(object message)
     {
-        logText.text += message;
+        logText.text += message + "\n";
+    }
+    private void LogWarning(object message)
+    {
+        Log("<color=\"yellow\">" + message + "</color>");
+    }
+    private void LogError(object message)
+    {
+        Log("<color=\"red\">" + message + "</color>");
     }
 
     [Command]

@@ -25,4 +25,10 @@ public static class TestingScript
     {
         return (a + b).ToString();
     }
+
+    [Command]
+    public static int Multiply(params int[] a)
+    {
+        return a.Sum(b => b);
+    }
 }
