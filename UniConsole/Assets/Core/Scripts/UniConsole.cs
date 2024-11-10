@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using static Unity.Burst.Intrinsics.X86.Avx;
 
 public class UniConsole : MonoBehaviour
 {
@@ -29,6 +30,20 @@ public class UniConsole : MonoBehaviour
         {
             commandHistoryIndex++;
             inputField.text = commandHistoryIndex == commandHistory.Count ? "" : commandHistory[commandHistoryIndex];
+        }
+
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            string command = inputField.text;
+            var autocompletes = GetAutocompleteOptions(command);
+
+            if (autocompletes.Length == 1)
+            {
+                inputField.text = autocompletes[0].Name;
+                return;
+            }
+
+            TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
         }
     }
 
@@ -126,6 +141,17 @@ public class UniConsole : MonoBehaviour
         Log("<color=\"red\">" + message + "</color>");
     }
 
+    private MethodInfo[] GetAutocompleteOptions(string command)
+    {
+        if (command == null) return null;
+
+        var available = Reflector.Commands;
+
+        if (available == null) return null;
+
+        return available.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
+    }
+
     [Command]
     public static void Clear()
     {
@@ -133,6 +159,11 @@ public class UniConsole : MonoBehaviour
 
     [Command]
     public static string Help()
-        => "Available Commands:\n" + string.Join("\n", Reflector.Commands.Select(cmd =>
-            $"{cmd.Name} {string.Join(" ", cmd.GetParameters().Select(p => p.ParameterType.Name))}"));
+        => "Available Commands:\n" + string.Join("\n", Reflector.Commands.Select(GetHelpString));
+
+    private static string GetHelpString(MethodInfo method)
+    {
+        if (method == null) return null;
+        return $"{method.Name} {string.Join(" ", method.GetParameters().Select(p => p.ParameterType.Name))}";
+    }
 }

@@ -17,9 +17,8 @@ public static class Reflector
 
     
     /// <summary>
-    /// Finds all static methods with the command attribute in the assembly.
+    /// Finds all static methods with the command attribute in the assembly. Available through the Commands property
     /// </summary>
-    /// <returns></returns>
     public static void UpdateCommandCache()
     {
         // Get all classes in the assembly
