@@ -17,14 +17,18 @@ public class UniConsole : MonoBehaviour
     public UnityEvent<string> OnCommandSubmitAttempted;
     public UnityEvent<MethodInfo> OnCommandSubmitted;
     public UnityEvent OnTerminalCleared;
+    public UnityEvent OnTerminalAwake;
 
     private void Awake()
     {
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
-        OnTerminalCleared.AddListener(OnClearTerminal);
+        OnTerminalCleared.AddListener(LogHelpText);
+        OnTerminalAwake.AddListener(LogHelpText);
+        
+        OnTerminalAwake.Invoke();
     }
 
-    private void OnClearTerminal()
+    private void LogHelpText()
     {
         Log("Type 'help' for a list of commands");
     }
