@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class UniConsole : MonoBehaviour
 {
@@ -12,10 +13,15 @@ public class UniConsole : MonoBehaviour
 
     private readonly List<string> commandHistory = new();
     private int commandHistoryIndex = 0;
+    
+    public UnityEvent<string> OnCommandSubmitAttempted;
+    public UnityEvent<MethodInfo> OnCommandSubmitted;
+    public UnityEvent OnTerminalCleared;
 
     private void Awake()
     {
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
+        OnTerminalCleared.AddListener(OnClearTerminal);
     }
 
     private void OnClearTerminal()
@@ -72,6 +78,8 @@ public class UniConsole : MonoBehaviour
 
     private void ExecuteCommand(string command)
     {
+        OnCommandSubmitAttempted?.Invoke(command);
+        
         var available = Reflector.Commands;
         string[] commandParts = command.Split(' ');
         string commandName = commandParts[0].Replace(" ", "");
@@ -79,7 +87,7 @@ public class UniConsole : MonoBehaviour
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
         {
             logText.text = "";
-            OnClearTerminal();
+            OnTerminalCleared?.Invoke();
             return;
         }
 
@@ -94,6 +102,8 @@ public class UniConsole : MonoBehaviour
                     object result = method.Invoke(null, parameters);
                     if (result != null)
                         TerminalLog(command, result);
+                    
+                    OnCommandSubmitted?.Invoke(method);
                 }
                 catch (Exception)
                 {
