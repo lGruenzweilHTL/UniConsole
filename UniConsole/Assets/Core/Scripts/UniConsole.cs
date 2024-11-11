@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
-using static Unity.Burst.Intrinsics.X86.Avx;
 
 public class UniConsole : MonoBehaviour
 {
@@ -17,6 +16,11 @@ public class UniConsole : MonoBehaviour
     private void Awake()
     {
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
+    }
+
+    private void OnClearTerminal()
+    {
+        Log("Type 'help' for a list of commands");
     }
 
     private void Update()
@@ -39,7 +43,12 @@ public class UniConsole : MonoBehaviour
 
             if (autocompletes.Length == 1)
             {
+                // Only one option, complete the command
                 inputField.text = autocompletes[0].Name;
+                
+                // Move the cursor to the end of the input field
+                inputField.caretPosition = inputField.text.Length;
+                
                 return;
             }
 
@@ -61,7 +70,7 @@ public class UniConsole : MonoBehaviour
         }
     }
 
-    public void ExecuteCommand(string command)
+    private void ExecuteCommand(string command)
     {
         var available = Reflector.Commands;
         string[] commandParts = command.Split(' ');
@@ -70,6 +79,7 @@ public class UniConsole : MonoBehaviour
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
         {
             logText.text = "";
+            OnClearTerminal();
             return;
         }
 
