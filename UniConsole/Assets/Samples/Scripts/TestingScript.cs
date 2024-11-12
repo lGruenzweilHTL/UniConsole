@@ -1,5 +1,3 @@
-using System.Linq;
-
 public static class TestingScript
 {
     [Command]
@@ -24,5 +22,11 @@ public static class TestingScript
     public static string Add(int a, int b)
     {
         return (a + b).ToString();
+    }
+
+    [Command]
+    public static string TestCommand(string name)
+    {
+        return $"This is a method overload to say the name {name}";
     }
 }

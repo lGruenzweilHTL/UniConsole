@@ -86,7 +86,7 @@ public class UniConsole : MonoBehaviour
 
         var available = Reflector.Commands;
         string[] commandParts = commandToExecute.Split(' ');
-        string commandName = commandParts[0].Replace(" ", "");
+        string commandName = commandParts[0];
 
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
         {
@@ -94,28 +94,27 @@ public class UniConsole : MonoBehaviour
             OnTerminalCleared?.Invoke();
             return;
         }
-        
-        // TODO: check for command ambiguity
+
         // TODO: Update autocomplete for full names
-        // TODO: Update autocomplete to go to farthest shared name
+        // TODO: Update autocomplete to go to earliest difference of commands
         foreach (var command in available)
         {
             if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
                 continue;
-            
+
             // Check for ambiguous commands
             // When a command name is ambiguous, check if the full name has already been specified
             if (command.IsAmbiguous)
             {
-                if (commandName == command.Name) // If full name is not specified
+                if (commandName.Equals(command.Name, StringComparison.OrdinalIgnoreCase)) // If full name is not specified
                 {
                     // Print all possibilities of the command
-                    var possibilities = string.Join(", ", available.Where(c => c.Name == commandName).Select(c => c.FullName));
+                    var possibilities = string.Join(", ", available.Where(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase)).Select(GetHelpString));
                     TerminalLog(command, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
                     return;
                 }
             }
-            
+
             try
             {
                 object[] parameters = ParseParameters(commandParts[1..], command.Method);
@@ -185,11 +184,13 @@ public class UniConsole : MonoBehaviour
 
     private TerminalCommand[] GetAutocompleteOptions(string command)
     {
-        if (command == null) return null;
+        if (command == null)
+            return null;
 
         var available = Reflector.Commands;
 
-        if (available == null) return null;
+        if (available == null)
+            return null;
 
         return available.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
