@@ -39,11 +39,13 @@ public class UniConsole : MonoBehaviour
         {
             commandHistoryIndex--;
             inputField.text = commandHistory[commandHistoryIndex];
+            inputField.caretPosition = inputField.text.Length;
         }
         else if (Input.GetKeyDown(KeyCode.DownArrow) && commandHistoryIndex < commandHistory.Count)
         {
             commandHistoryIndex++;
             inputField.text = commandHistoryIndex == commandHistory.Count ? "" : commandHistory[commandHistoryIndex];
+            inputField.caretPosition = inputField.text.Length;
         }
 
         if (Input.GetKeyDown(KeyCode.Tab))
@@ -99,7 +101,11 @@ public class UniConsole : MonoBehaviour
         // TODO: Update autocomplete to go to earliest difference of commands
         foreach (var command in available)
         {
+            var expectedParameters = command.Method.GetParameters();
+
             if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
+                continue;
+            if (commandParts.Length - 1 != expectedParameters.Length)
                 continue;
 
             // Check for ambiguous commands
@@ -109,8 +115,8 @@ public class UniConsole : MonoBehaviour
                 if (commandName.Equals(command.Name, StringComparison.OrdinalIgnoreCase)) // If full name is not specified
                 {
                     // Print all possibilities of the command
-                    var possibilities = string.Join(", ", available.Where(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase)).Select(GetHelpString));
-                    TerminalLog(command, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
+                    var possibilities = string.Join(", ", available.Where(c => c.Equals(command)).Select(GetHelpString));
+                    TerminalLog(commandToExecute, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
                     return;
                 }
             }
@@ -118,9 +124,19 @@ public class UniConsole : MonoBehaviour
             try
             {
                 object[] parameters = ParseParameters(commandParts[1..], command.Method);
+                
+                if (expectedParameters.Length == 0)
+                    expectedParameters = null;
+
+                // Check if parameters are the same
+                if (parameters == null ^ expectedParameters == null)
+                    continue;
+                if (parameters != null && expectedParameters != null && parameters.Length != expectedParameters.Length)
+                    continue;
+
                 object result = command.Method.Invoke(null, parameters);
                 if (result != null)
-                    TerminalLog(command.Name, result);
+                    TerminalLog(commandToExecute, result);
 
                 OnCommandSubmitted?.Invoke(command);
             }

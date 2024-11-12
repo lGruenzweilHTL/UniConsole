@@ -3,18 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-public class TerminalCommand
+public class TerminalCommand : IEquatable<TerminalCommand>
 {
     public readonly Type Class;
     public readonly MethodInfo Method;
-    public readonly bool IsAmbiguous;
+    public  bool IsAmbiguous => Reflector.Commands.Count(Equals) > 1;
 
     public TerminalCommand(Type @class, MethodInfo method)
     {
         Class = @class;
         Method = method;
-
-        IsAmbiguous = Reflector.Commands.Count(cmd => cmd.Name == Name) > 1;
     }
 
     /// <summary>
@@ -37,5 +35,15 @@ public class TerminalCommand
 
         if (!string.IsNullOrWhiteSpace(Class.Namespace)) names.Add($"{Class.Namespace}.{FullName}");
         return names.ToArray();
+    }
+
+    public bool Equals(TerminalCommand other)
+    {
+        bool nameEqual = Name.Equals(other.Name);
+        var paramTypes = Method.GetParameters().Select(p => p.ParameterType).ToArray();
+        var otherParamTypes = other.Method.GetParameters().Select(p => p.ParameterType).ToArray();
+
+        bool paramsEqual = paramTypes.Equals(otherParamTypes);
+        return nameEqual && paramsEqual;
     }
 }
