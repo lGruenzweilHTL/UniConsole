@@ -50,22 +50,50 @@ public class UniConsole : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            string command = inputField.text;
-            var autocompletes = GetAutocompleteOptions(command);
-
-            if (autocompletes.Length == 1)
-            {
-                // Only one option, complete the command
-                inputField.text = autocompletes[0].Name;
-
-                // Move the cursor to the end of the input field
-                inputField.caretPosition = inputField.text.Length;
-
-                return;
-            }
-
-            TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
+            HandleAutocomplete();
         }
+    }
+
+    private void HandleAutocomplete()
+    {
+        string command = inputField.text;
+        var autocompletes = GetAutocompleteOptions(command);
+
+        if (autocompletes.Length == 0)
+            return;
+
+        int diffIdx = GetEarliestDifferenceIndex(autocompletes.Select(c => c.Name).ToArray());
+        if (diffIdx != command.Length)
+        {
+            // Only one option, complete the command
+            inputField.text = autocompletes[0].Name[0..diffIdx];
+
+            // Move the cursor to the end of the input field
+            inputField.caretPosition = diffIdx;
+        }
+        else
+            TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
+    }
+    private int GetEarliestDifferenceIndex(string[] strings)
+    {
+        if (strings.Length == 1)
+            return strings[0].Length;
+
+        int idx = int.MaxValue;
+        for (int i = 0; i < strings.Length - 1; i++)
+        {
+            int limit = Mathf.Min(strings[i].Length, strings[i + 1].Length);
+            for (int j = 0; j < limit; j++)
+            {
+                if (strings[i][j] != strings[i + 1][j])
+                {
+                    idx = Mathf.Min(j, idx);
+                    break;
+                }
+            }
+            idx = Mathf.Min(limit, idx);
+        }
+        return idx;
     }
 
     private void OnInputFieldSubmit(string command)
@@ -124,7 +152,7 @@ public class UniConsole : MonoBehaviour
             try
             {
                 object[] parameters = ParseParameters(commandParts[1..], command.Method);
-                
+
                 if (expectedParameters.Length == 0)
                     expectedParameters = null;
 
