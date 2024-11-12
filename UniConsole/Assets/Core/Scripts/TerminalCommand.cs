@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 public class TerminalCommand
@@ -13,11 +14,15 @@ public class TerminalCommand
         Method = method;
     }
 
+    public bool IsAmbiguous
+        => Reflector.Commands.Count(cmd => cmd.Name == Name) > 1;
+
+
     /// <summary>
     /// Returns only the name of the method itself.
     /// </summary>
     public string Name => Method.Name;
-    
+
     /// <summary>
     /// Returns the full name of the method (including namespace).
     /// </summary>

@@ -62,7 +62,7 @@ public class UniConsole : MonoBehaviour
                 return;
             }
 
-            TerminalLog(command, string.Join(", ", autocompletes.Select(c => GetHelpString(c.Method))));
+            TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
         }
     }
 
@@ -94,12 +94,27 @@ public class UniConsole : MonoBehaviour
             OnTerminalCleared?.Invoke();
             return;
         }
-
+        
         // TODO: check for command ambiguity
+        // TODO: Update autocomplete for full names
+        // TODO: Update autocomplete to go to farthest shared name
         foreach (var command in available)
         {
             if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
                 continue;
+            
+            // Check for ambiguous commands
+            // When a command name is ambiguous, check if the full name has already been specified
+            if (command.IsAmbiguous)
+            {
+                if (commandName == command.Name) // If full name is not specified
+                {
+                    // Print all possibilities of the command
+                    var possibilities = string.Join(", ", available.Where(c => c.Name == commandName).Select(c => c.FullName));
+                    TerminalLog(command, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
+                    return;
+                }
+            }
             
             try
             {
@@ -112,7 +127,7 @@ public class UniConsole : MonoBehaviour
             }
             catch (Exception)
             {
-                TerminalLog(command, "Invalid number of arguments", LogType.Error);
+                TerminalLog(commandToExecute, "Invalid number of arguments", LogType.Error);
             }
 
             return;
@@ -189,11 +204,12 @@ public class UniConsole : MonoBehaviour
         => "Available Commands:\n" + string.Join("\n",
             Reflector.Commands
                 .Select(cmd =>
-                    GetHelpString(cmd.Method)));
+                    GetHelpString(cmd)));
 
-    private static string GetHelpString(MethodInfo method)
+    private static string GetHelpString(TerminalCommand command)
     {
-        if (method == null) return null;
-        return $"{method.Name} {string.Join(" ", method.GetParameters().Select(p => p.ParameterType.Name))}";
+        return command.IsAmbiguous
+            ? $"{command.Class.FullName}.{command.Name} {string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name))}"
+            : $"{command.Name} {string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name))}";
     }
 }
