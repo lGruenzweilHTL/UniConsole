@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Reflection;
 public static class Reflector
 {
-    private static MethodInfo[] _commands;
-    public static MethodInfo[] Commands
+    private static TerminalCommand[] _commands;
+    public static TerminalCommand[] Commands
     {
         get
         {
@@ -23,7 +23,7 @@ public static class Reflector
     {
         // Get all classes in the assembly
         var types = Assembly.GetExecutingAssembly().GetTypes();
-        var methods = new List<MethodInfo>();
+        var methods = new List<TerminalCommand>();
         foreach (var type in types)
         {
             // Get all methods in the class
@@ -34,7 +34,7 @@ public static class Reflector
                 var commandAttribute = method.GetCustomAttribute<CommandAttribute>();
                 if (commandAttribute != null)
                 {
-                    methods.Add(method);
+                    methods.Add(new TerminalCommand(type, method));
                 }
             }
         }
