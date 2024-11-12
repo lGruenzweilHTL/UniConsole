@@ -5,18 +5,17 @@ using System.Reflection;
 
 public class TerminalCommand
 {
-    public Type Class;
-    public MethodInfo Method;
+    public readonly Type Class;
+    public readonly MethodInfo Method;
+    public readonly bool IsAmbiguous;
 
     public TerminalCommand(Type @class, MethodInfo method)
     {
         Class = @class;
         Method = method;
+
+        IsAmbiguous = Reflector.Commands.Count(cmd => cmd.Name == Name) > 1;
     }
-
-    public bool IsAmbiguous
-        => Reflector.Commands.Count(cmd => cmd.Name == Name) > 1;
-
 
     /// <summary>
     /// Returns only the name of the method itself.
@@ -24,7 +23,7 @@ public class TerminalCommand
     public string Name => Method.Name;
 
     /// <summary>
-    /// Returns the full name of the method (including namespace).
+    /// Returns the full name of the method (including class and namespace).
     /// </summary>
     public string FullName => $"{Class.FullName}.{Name}";
 

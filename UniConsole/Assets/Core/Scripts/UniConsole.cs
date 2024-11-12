@@ -209,8 +209,10 @@ public class UniConsole : MonoBehaviour
 
     private static string GetHelpString(TerminalCommand command)
     {
+        string parameters = string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name));
+
         return command.IsAmbiguous
-            ? $"{command.Class.FullName}.{command.Name} {string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name))}"
-            : $"{command.Name} {string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name))}";
+            ? $"{command.Class.FullName}.{command.Name} {parameters}"
+            : $"{command.Name} {parameters}";
     }
 }
