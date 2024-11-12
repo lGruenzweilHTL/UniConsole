@@ -1,5 +1,3 @@
-using System.Linq;
-
 public static class TestingScript
 {
     [Command]
@@ -27,8 +25,8 @@ public static class TestingScript
     }
 
     [Command]
-    public static int Multiply(params int[] a)
+    public static string TestCommand(string name)
     {
-        return a.Sum(b => b);
+        return $"This is a method overload to say the name {name}";
     }
 }

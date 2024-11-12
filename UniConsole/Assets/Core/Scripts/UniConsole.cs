@@ -13,9 +13,9 @@ public class UniConsole : MonoBehaviour
 
     private readonly List<string> commandHistory = new();
     private int commandHistoryIndex = 0;
-    
+
     public UnityEvent<string> OnCommandSubmitAttempted;
-    public UnityEvent<MethodInfo> OnCommandSubmitted;
+    public UnityEvent<TerminalCommand> OnCommandSubmitted;
     public UnityEvent OnTerminalCleared;
     public UnityEvent OnTerminalAwake;
 
@@ -24,7 +24,7 @@ public class UniConsole : MonoBehaviour
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
         OnTerminalCleared.AddListener(LogHelpText);
         OnTerminalAwake.AddListener(LogHelpText);
-        
+
         OnTerminalAwake.Invoke();
     }
 
@@ -39,11 +39,13 @@ public class UniConsole : MonoBehaviour
         {
             commandHistoryIndex--;
             inputField.text = commandHistory[commandHistoryIndex];
+            inputField.caretPosition = inputField.text.Length;
         }
         else if (Input.GetKeyDown(KeyCode.DownArrow) && commandHistoryIndex < commandHistory.Count)
         {
             commandHistoryIndex++;
             inputField.text = commandHistoryIndex == commandHistory.Count ? "" : commandHistory[commandHistoryIndex];
+            inputField.caretPosition = inputField.text.Length;
         }
 
         if (Input.GetKeyDown(KeyCode.Tab))
@@ -55,10 +57,10 @@ public class UniConsole : MonoBehaviour
             {
                 // Only one option, complete the command
                 inputField.text = autocompletes[0].Name;
-                
+
                 // Move the cursor to the end of the input field
                 inputField.caretPosition = inputField.text.Length;
-                
+
                 return;
             }
 
@@ -80,13 +82,13 @@ public class UniConsole : MonoBehaviour
         }
     }
 
-    private void ExecuteCommand(string command)
+    private void ExecuteCommand(string commandToExecute)
     {
-        OnCommandSubmitAttempted?.Invoke(command);
-        
+        OnCommandSubmitAttempted?.Invoke(commandToExecute);
+
         var available = Reflector.Commands;
-        string[] commandParts = command.Split(' ');
-        string commandName = commandParts[0].Replace(" ", "");
+        string[] commandParts = commandToExecute.Split(' ');
+        string commandName = commandParts[0];
 
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
         {
@@ -95,30 +97,58 @@ public class UniConsole : MonoBehaviour
             return;
         }
 
-        foreach (var method in available)
+        // TODO: Update autocomplete for full names
+        // TODO: Update autocomplete to go to earliest difference of commands
+        foreach (var command in available)
         {
-            if (method.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    object[] parameters = ParseParameters(commandParts[1..], method);
-                    ParameterInfo[] expectedParameters = method.GetParameters();
-                    object result = method.Invoke(null, parameters);
-                    if (result != null)
-                        TerminalLog(command, result);
-                    
-                    OnCommandSubmitted?.Invoke(method);
-                }
-                catch (Exception)
-                {
-                    TerminalLog(command, "Invalid number of arguments", LogType.Error);
-                }
+            var expectedParameters = command.Method.GetParameters();
 
-                return;
+            if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
+                continue;
+            if (commandParts.Length - 1 != expectedParameters.Length)
+                continue;
+
+            // Check for ambiguous commands
+            // When a command name is ambiguous, check if the full name has already been specified
+            if (command.IsAmbiguous)
+            {
+                if (commandName.Equals(command.Name, StringComparison.OrdinalIgnoreCase)) // If full name is not specified
+                {
+                    // Print all possibilities of the command
+                    var possibilities = string.Join(", ", available.Where(c => c.Equals(command)).Select(GetHelpString));
+                    TerminalLog(commandToExecute, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
+                    return;
+                }
             }
+
+            try
+            {
+                object[] parameters = ParseParameters(commandParts[1..], command.Method);
+                
+                if (expectedParameters.Length == 0)
+                    expectedParameters = null;
+
+                // Check if parameters are the same
+                if (parameters == null ^ expectedParameters == null)
+                    continue;
+                if (parameters != null && expectedParameters != null && parameters.Length != expectedParameters.Length)
+                    continue;
+
+                object result = command.Method.Invoke(null, parameters);
+                if (result != null)
+                    TerminalLog(commandToExecute, result);
+
+                OnCommandSubmitted?.Invoke(command);
+            }
+            catch (Exception)
+            {
+                TerminalLog(commandToExecute, "Invalid number of arguments", LogType.Error);
+            }
+
+            return;
         }
 
-        Log(command);
+        Log(commandToExecute);
     }
 
     private object[] ParseParameters(string[] parameters, MethodInfo method)
@@ -152,26 +182,31 @@ public class UniConsole : MonoBehaviour
         else
             throw new ArgumentOutOfRangeException();
     }
+
     private void Log(object message)
     {
         logText.text += message + "\n";
     }
+
     private void LogWarning(object message)
     {
         Log("<color=\"yellow\">" + message + "</color>");
     }
+
     private void LogError(object message)
     {
         Log("<color=\"red\">" + message + "</color>");
     }
 
-    private MethodInfo[] GetAutocompleteOptions(string command)
+    private TerminalCommand[] GetAutocompleteOptions(string command)
     {
-        if (command == null) return null;
+        if (command == null)
+            return null;
 
         var available = Reflector.Commands;
 
-        if (available == null) return null;
+        if (available == null)
+            return null;
 
         return available.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
@@ -183,11 +218,17 @@ public class UniConsole : MonoBehaviour
 
     [Command]
     public static string Help()
-        => "Available Commands:\n" + string.Join("\n", Reflector.Commands.Select(GetHelpString));
+        => "Available Commands:\n" + string.Join("\n",
+            Reflector.Commands
+                .Select(cmd =>
+                    GetHelpString(cmd)));
 
-    private static string GetHelpString(MethodInfo method)
+    private static string GetHelpString(TerminalCommand command)
     {
-        if (method == null) return null;
-        return $"{method.Name} {string.Join(" ", method.GetParameters().Select(p => p.ParameterType.Name))}";
+        string parameters = string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name));
+
+        return command.IsAmbiguous
+            ? $"{command.Class.FullName}.{command.Name} {parameters}"
+            : $"{command.Name} {parameters}";
     }
 }
