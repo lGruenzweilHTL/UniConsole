@@ -125,8 +125,7 @@ public class UniConsole : MonoBehaviour
             return;
         }
 
-        // TODO: Update autocomplete for full names
-        // TODO: Update autocomplete to go to earliest difference of commands
+        // TODO: Update autocomplete for classes and namespaces
         foreach (var command in available)
         {
             var expectedParameters = command.Method.GetParameters();
@@ -170,7 +169,7 @@ public class UniConsole : MonoBehaviour
             }
             catch (Exception)
             {
-                TerminalLog(commandToExecute, "Invalid number of arguments", LogType.Error);
+                TerminalLog(commandToExecute, "Could not Parse parameters", LogType.Error);
             }
 
             return;
