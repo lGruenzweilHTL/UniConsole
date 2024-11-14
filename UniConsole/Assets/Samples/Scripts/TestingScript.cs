@@ -1,32 +1,37 @@
 public static class TestingScript
 {
-    [Command]
+    [Command("Prints test things")]
     public static string TestCommand()
     {
         return "hehehehaaaa";
     }
 
-    [Command]
+    [Command("Prints test things")]
     public static string TestCommand2()
     {
         return "Hello, World!";
     }
 
-    [Command]
+    [Command("Does something complex")]
     public static string ComplexCommand(int num)
     {
         return "Square of " + num + " is " + num * num;
     }
 
-    [Command]
+    [Command("Adds two numbers")]
     public static string Add(int a, int b)
     {
         return (a + b).ToString();
     }
-
-    [Command]
-    public static string TestCommand(string name)
+    [Command("Adds three numbers")]
+    public static int Add(int a, int b, int c)
     {
-        return $"This is a method overload to say the name {name}";
+        return a + b + c;
     }
+}
+
+public static class TestClass
+{
+    [Command("Does testing things from another class")]
+    public static string TestCommand() => "TestCommand";
 }

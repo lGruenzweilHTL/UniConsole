@@ -74,6 +74,7 @@ public class UniConsole : MonoBehaviour
         else
             TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
     }
+
     private int GetEarliestDifferenceIndex(string[] strings)
     {
         if (strings.Length == 1)
@@ -91,8 +92,10 @@ public class UniConsole : MonoBehaviour
                     break;
                 }
             }
+
             idx = Mathf.Min(limit, idx);
         }
+
         return idx;
     }
 
@@ -139,11 +142,14 @@ public class UniConsole : MonoBehaviour
             // When a command name is ambiguous, check if the full name has already been specified
             if (command.IsAmbiguous)
             {
-                if (commandName.Equals(command.Name, StringComparison.OrdinalIgnoreCase)) // If full name is not specified
+                if (commandName.Equals(command.Name,
+                        StringComparison.OrdinalIgnoreCase)) // If full name is not specified
                 {
                     // Print all possibilities of the command
-                    var possibilities = string.Join(", ", available.Where(c => c.Equals(command)).Select(GetHelpString));
-                    TerminalLog(commandToExecute, $"Ambiguous command!\nPossible commands: {possibilities}", LogType.Warning);
+                    var possibilities =
+                        string.Join(", ", available.Where(c => c.Equals(command)).Select(GetHelpString));
+                    TerminalLog(commandToExecute, $"Ambiguous command!\nPossible commands: {possibilities}",
+                        LogType.Warning);
                     return;
                 }
             }
@@ -232,23 +238,32 @@ public class UniConsole : MonoBehaviour
 
         var available = Reflector.Commands;
 
-        if (available == null)
-            return null;
-
-        return available.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
+        return available?.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
 
-    [Command]
+    [Command("Clears the console")]
     public static void Clear()
     {
     }
 
-    [Command]
+    [Command("Prints a manual for a specific command")]
+    public static string Help(string commandName)
+        => string.Join('\n', Reflector.Commands.Where(
+                c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase))
+            .Select(cmd =>
+            {
+                string description = cmd.Method.GetCustomAttribute<CommandAttribute>().Description;
+                string name = GetHelpString(cmd);
+                
+                return $"{name}\n\t{description}";
+            }));
+
+
+    [Command("Prints all possible commands")]
     public static string Help()
         => "Available Commands:\n" + string.Join("\n",
             Reflector.Commands
-                .Select(cmd =>
-                    GetHelpString(cmd)));
+                .Select(GetHelpString));
 
     private static string GetHelpString(TerminalCommand command)
     {
