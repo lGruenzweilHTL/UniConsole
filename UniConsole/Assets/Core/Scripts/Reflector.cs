@@ -1,17 +1,36 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+
 public static class Reflector
 {
-    private static TerminalCommand[] _commands;
+    private static TerminalCommand[] _commands = { };
+    private static Type[] _classes = { };
+    
+    private static bool initialized = false;
+    
     public static TerminalCommand[] Commands
     {
         get
         {
-            if (_commands == null || _commands.Length == 0)
+            if (!initialized)
             {
                 UpdateCommandCache();
             }
             return _commands;
+        }
+    }
+
+    public static Type[] Classes
+    {
+        get
+        {
+            if (!initialized)
+            {
+                UpdateCommandCache();
+            }
+            return _classes;
         }
     }
 
@@ -24,6 +43,7 @@ public static class Reflector
         // Get all classes in the assembly
         var types = Assembly.GetExecutingAssembly().GetTypes();
         var methods = new List<TerminalCommand>();
+        var classes = new List<Type>();
         foreach (var type in types)
         {
             // Get all methods in the class
@@ -32,13 +52,15 @@ public static class Reflector
             {
                 // Check if the method has the Command attribute
                 var commandAttribute = method.GetCustomAttribute<CommandAttribute>();
-                if (commandAttribute != null)
-                {
-                    methods.Add(new TerminalCommand(type, method));
-                }
+                if (commandAttribute == null) continue;
+                methods.Add(new TerminalCommand(type, method));
+                if (!classes.Contains(type)) classes.Add(type);
             }
         }
         
         _commands = methods.ToArray();
+        _classes = types.ToArray();
+        
+        initialized = true;
     }
 }

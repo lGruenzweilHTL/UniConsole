@@ -59,16 +59,19 @@ public class UniConsole : MonoBehaviour
         string[] parts = command.Split(' ');
         command = parts[^1];
         
-        var autocompletes = TerminalCommand.GetAutocompleteOptions(command);
+        var options = TerminalCommand.GetAutocompleteOptions(command)
+            .Select(c => c.CommandName)
+            //.Concat(TerminalCommand.GetClassAutocompletes(command))
+            .ToArray();
 
-        if (autocompletes.Length == 0)
+        if (options.Length == 0)
             return;
 
-        int diffIdx = GetEarliestDifferenceIndex(autocompletes.Select(c => c.Name).ToArray());
+        int diffIdx = GetEarliestDifferenceIndex(options);
         if (diffIdx != command.Length)
         {
             // Calculate final autocomplete
-            parts[^1] = autocompletes[0].Name[..diffIdx];
+            parts[^1] = options[0][..diffIdx];
             string complete = string.Join(' ', parts);
             
             // Only one option, complete the command
@@ -78,7 +81,7 @@ public class UniConsole : MonoBehaviour
             inputField.caretPosition = complete.Length;
         }
         else
-            TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
+            TerminalLog(command, string.Join(", ", options));
     }
 
     private static int GetEarliestDifferenceIndex(string[] strings)
@@ -134,7 +137,6 @@ public class UniConsole : MonoBehaviour
             return;
         }
 
-        // TODO: Update autocomplete for classes and namespaces
         foreach (var command in available)
         {
             var expectedParameters = command.Method.GetParameters();

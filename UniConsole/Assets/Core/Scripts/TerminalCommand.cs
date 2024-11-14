@@ -25,6 +25,11 @@ public class TerminalCommand : IEquatable<TerminalCommand>
     /// </summary>
     public string FullName => $"{Class.FullName}.{Name}";
 
+    /// <summary>
+    /// The command name to be used in the terminal. It is decided based on the ambiguity of the command.
+    /// </summary>
+    public string CommandName => IsAmbiguous ? FullName : Name;
+
     public string[] GetAllPossibleNames()
     {
         List<string> names = new()
@@ -56,6 +61,16 @@ public class TerminalCommand : IEquatable<TerminalCommand>
 
         var available = Reflector.Commands;
 
-        return available?.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
+        return available?.Where(cmd => cmd.CommandName.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
+    }
+
+    public static string[] GetClassAutocompletes(string command)
+    {
+        if (command == null)
+            return null;
+        
+        var available = Reflector.Classes;
+        
+        return available?.Where(c => c.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name).ToArray();
     }
 }
