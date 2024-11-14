@@ -50,14 +50,16 @@ public class UniConsole : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            HandleAutocomplete();
+            HandleAutocomplete(inputField.text);
         }
     }
 
-    private void HandleAutocomplete()
+    private void HandleAutocomplete(string command)
     {
-        string command = inputField.text;
-        var autocompletes = GetAutocompleteOptions(command);
+        string[] parts = command.Split(' ');
+        command = parts[^1];
+        
+        var autocompletes = TerminalCommand.GetAutocompleteOptions(command);
 
         if (autocompletes.Length == 0)
             return;
@@ -65,17 +67,21 @@ public class UniConsole : MonoBehaviour
         int diffIdx = GetEarliestDifferenceIndex(autocompletes.Select(c => c.Name).ToArray());
         if (diffIdx != command.Length)
         {
+            // Calculate final autocomplete
+            parts[^1] = autocompletes[0].Name[..diffIdx];
+            string complete = string.Join(' ', parts);
+            
             // Only one option, complete the command
-            inputField.text = autocompletes[0].Name[0..diffIdx];
+            inputField.text = complete;
 
             // Move the cursor to the end of the input field
-            inputField.caretPosition = diffIdx;
+            inputField.caretPosition = complete.Length;
         }
         else
             TerminalLog(command, string.Join(", ", autocompletes.Select(GetHelpString)));
     }
 
-    private int GetEarliestDifferenceIndex(string[] strings)
+    private static int GetEarliestDifferenceIndex(string[] strings)
     {
         if (strings.Length == 1)
             return strings[0].Length;
@@ -229,16 +235,6 @@ public class UniConsole : MonoBehaviour
     private void LogError(object message)
     {
         Log("<color=\"red\">" + message + "</color>");
-    }
-
-    private TerminalCommand[] GetAutocompleteOptions(string command)
-    {
-        if (command == null)
-            return null;
-
-        var available = Reflector.Commands;
-
-        return available?.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
 
     [Command("Clears the console")]

@@ -39,11 +39,23 @@ public class TerminalCommand : IEquatable<TerminalCommand>
 
     public bool Equals(TerminalCommand other)
     {
+        if (other == null) return false;
+        
         bool nameEqual = Name.Equals(other.Name);
         var paramTypes = Method.GetParameters().Select(p => p.ParameterType).ToArray();
         var otherParamTypes = other.Method.GetParameters().Select(p => p.ParameterType).ToArray();
 
         bool paramsEqual = paramTypes.Equals(otherParamTypes);
         return nameEqual && paramsEqual;
+    }
+    
+    public static TerminalCommand[] GetAutocompleteOptions(string command)
+    {
+        if (command == null)
+            return null;
+
+        var available = Reflector.Commands;
+
+        return available?.Where(cmd => cmd.Name.StartsWith(command, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
 }
