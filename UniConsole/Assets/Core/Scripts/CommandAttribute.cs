@@ -1,4 +1,7 @@
-﻿public class CommandAttribute : System.Attribute
+﻿using System;
+
+[AttributeUsage(AttributeTargets.Method)]
+public class CommandAttribute : Attribute
 {
     public string Description { get; }
     

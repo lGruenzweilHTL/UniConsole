@@ -23,9 +23,8 @@ public class UniConsole : MonoBehaviour
     {
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
         OnTerminalCleared.AddListener(LogHelpText);
-        OnTerminalAwake.AddListener(LogHelpText);
 
-        OnTerminalAwake.Invoke();
+        OnTerminalCleared?.Invoke();
     }
 
     private void LogHelpText()
@@ -270,5 +269,11 @@ public class UniConsole : MonoBehaviour
         return command.IsAmbiguous
             ? $"{command.Class.FullName}.{command.Name} {parameters}"
             : $"{command.Name} {parameters}";
+    }
+    
+    [Command("Exits the application")]
+    public static void Exit()
+    {
+        Application.Quit();
     }
 }

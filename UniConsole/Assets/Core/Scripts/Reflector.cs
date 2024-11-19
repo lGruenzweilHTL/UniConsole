@@ -5,6 +5,7 @@ using System.Reflection;
 
 public static class Reflector
 {
+    private const BindingFlags Flags = BindingFlags.Static;
     private static TerminalCommand[] _commands = { };
     private static Type[] _classes = { };
     
@@ -47,7 +48,7 @@ public static class Reflector
         foreach (var type in types)
         {
             // Get all methods in the class
-            var typeMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
+            var typeMethods = type.GetMethods(Flags);
             foreach (var method in typeMethods)
             {
                 // Check if the method has the Command attribute
