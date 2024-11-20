@@ -5,7 +5,7 @@ using System.Reflection;
 
 public static class Reflector
 {
-    private const BindingFlags Flags = BindingFlags.Static;
+    private const BindingFlags Flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
     private static TerminalCommand[] _commands = { };
     private static Type[] _classes = { };
     
