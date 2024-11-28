@@ -5,8 +5,7 @@
 It is designed to be a free alternative with less features.
 
 ## Why?
-Can be used for debugging purposes in playmode.
-You can also use it as an Admin Console for running restricted commands.
+I needed an Admin Console for the Unity Scene View.
 
 ## Planned features
 - [ ] Optional parameter support
@@ -14,9 +13,15 @@ You can also use it as an Admin Console for running restricted commands.
 - [ ] Add better parsing support
 - [ ] Customization
 
-## How to Use
+## Installation
 
-Drag the Prefab found in `Assets/Core/Prefabs/Terminal` into your scene and it's ready to go.
+Are you already familiar with Unity (and Github) and are looking for a quick way to install this project? Check out the [Advanced installation guide](AdvancedInstall.md).
+
+Are you new to Unity and/or Github and are looking for a detailed, beginner friendly guide? Try the [Beginner installation guide](BeginnerInstall.md).
+
+## Version History
+
+Click [here](Releases.md) to view the Version History and the Patch Notes of `UniConsole`.
 
 ## Commands
 
@@ -34,7 +39,7 @@ The default commands for `UniConsole` are:
     }
     ```
 - `clear`: Clear the console
-- `exit`: Exits the application using the command `Application.Quit()`
+- `exit`: Exits the application using `Application.Quit()`
 
 ## Examples
 
