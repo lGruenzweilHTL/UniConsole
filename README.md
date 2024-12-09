@@ -5,8 +5,7 @@
 It is designed to be a free alternative with less features.
 
 ## Why?
-Can be used for debugging purposes in playmode.
-You can also use it as an Admin Console for running restricted commands.
+Because I needed an Admin terminal in the scene view.
 
 ## Planned features
 - [ ] Optional parameter support
