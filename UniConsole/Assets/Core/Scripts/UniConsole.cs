@@ -5,6 +5,7 @@ using System.Reflection;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 public class UniConsole : MonoBehaviour
 {
@@ -57,7 +58,7 @@ public class UniConsole : MonoBehaviour
     {
         string[] parts = command.Split(' ');
         command = parts[^1];
-        
+
         var options = TerminalCommand.GetAutocompleteOptions(command)
             .Select(c => c.CommandName)
             //.Concat(TerminalCommand.GetClassAutocompletes(command))
@@ -72,7 +73,7 @@ public class UniConsole : MonoBehaviour
             // Calculate final autocomplete
             parts[^1] = options[0][..diffIdx];
             string complete = string.Join(' ', parts);
-            
+
             // Only one option, complete the command
             inputField.text = complete;
 
@@ -140,8 +141,11 @@ public class UniConsole : MonoBehaviour
         {
             var expectedParameters = command.Method.GetParameters();
 
+            // Not the correct command name
             if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
                 continue;
+
+            // Not the correct parameter count
             if (commandParts.Length - 1 != expectedParameters.Length)
                 continue;
 
@@ -161,30 +165,35 @@ public class UniConsole : MonoBehaviour
                 }
             }
 
+            // Parse parameters
+            object[] parameters = {};
             try
             {
-                object[] parameters = ParseParameters(commandParts[1..], command.Method);
-
-                if (expectedParameters.Length == 0)
-                    expectedParameters = null;
-
-                // Check if parameters are the same
-                if (parameters == null ^ expectedParameters == null)
-                    continue;
-                if (parameters != null && expectedParameters != null && parameters.Length != expectedParameters.Length)
-                    continue;
-
-                object result = command.Method.Invoke(null, parameters);
-                if (result != null)
-                    TerminalLog(commandToExecute, result);
-
-                OnCommandSubmitted?.Invoke(command);
+                parameters = ParseParameters(commandParts[1..], command.Method);
             }
             catch (Exception)
             {
                 TerminalLog(commandToExecute, "Could not Parse parameters", LogType.Error);
+                return;
             }
 
+            // Everything is correct, actually execute the command
+            
+            if (expectedParameters.Length == 0) // No parameters, needs null to work correctly
+                expectedParameters = null;
+
+            // Check if parameters are the same
+            if (parameters == null ^ expectedParameters == null)
+                continue;
+            if (parameters != null && expectedParameters != null && parameters.Length != expectedParameters.Length)
+                continue;
+
+            object result = command.Method.Invoke(null, parameters);
+            TerminalLog(commandToExecute, result ?? "");
+
+            OnCommandSubmitted?.Invoke(command);
+
+            // Command executed successfully
             return;
         }
 
@@ -251,7 +260,7 @@ public class UniConsole : MonoBehaviour
             {
                 string description = cmd.Method.GetCustomAttribute<CommandAttribute>().Description;
                 string name = GetHelpString(cmd);
-                
+
                 return $"{name}\n\t{description}";
             }));
 
@@ -262,6 +271,30 @@ public class UniConsole : MonoBehaviour
             Reflector.Commands
                 .Select(GetHelpString));
 
+    [Command("Prints the unity project hierarchy of the active scene")]
+    public static string PrintHierarchy()
+    {
+        string result = "";
+        foreach (var obj in SceneManager.GetActiveScene().GetRootGameObjects())
+        {
+            result += GetHierarchy(obj.transform);
+        }
+
+        return result;
+
+        // Recursively print the hierarchy
+        string GetHierarchy(Transform transform, int depth = 0)
+        {
+            string indent = new string('-', depth * 2);
+            string result = indent + transform.name + "\n";
+
+            for (int i = 0; i < transform.childCount; i++)
+                result += GetHierarchy(transform.GetChild(i), depth + 1);
+
+            return result;
+        }
+    }
+
     private static string GetHelpString(TerminalCommand command)
     {
         string parameters = string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name));
@@ -270,7 +303,7 @@ public class UniConsole : MonoBehaviour
             ? $"{command.Class.FullName}.{command.Name} {parameters}"
             : $"{command.Name} {parameters}";
     }
-    
+
     [Command("Exits the application")]
     public static void Exit()
     {
