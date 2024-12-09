@@ -9,6 +9,10 @@ using UnityEngine.SceneManagement;
 
 public class UniConsole : MonoBehaviour
 {
+    private const string HELP_TEXT = "Type 'help' for a list of commands";
+    
+    [SerializeField] private UniConsoleConfigScriptableObject config;
+    [Space]
     [SerializeField] private TMP_Text logText;
     [SerializeField] private TMP_InputField inputField;
 
@@ -18,19 +22,23 @@ public class UniConsole : MonoBehaviour
     public UnityEvent<string> OnCommandSubmitAttempted;
     public UnityEvent<TerminalCommand> OnCommandSubmitted;
     public UnityEvent OnTerminalCleared;
-    public UnityEvent OnTerminalAwake;
+    public UnityEvent OnTerminalEnabled;
 
     private void Awake()
     {
+        Reflector.UpdateCommandCache(config.AllowPrivateCommands);
+        
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
-        OnTerminalCleared.AddListener(LogHelpText);
+        OnTerminalCleared.AddListener(() =>
+        {
+            if (config.PrintHelpTextOnClear) Log(HELP_TEXT);
+        });
+        OnTerminalEnabled.AddListener(() =>
+        {
+            if (config.PrintHelpTextOnEnable) Log(HELP_TEXT);
+        });
 
         OnTerminalCleared?.Invoke();
-    }
-
-    private void LogHelpText()
-    {
-        Log("Type 'help' for a list of commands");
     }
 
     private void Update()
@@ -61,7 +69,6 @@ public class UniConsole : MonoBehaviour
 
         var options = TerminalCommand.GetAutocompleteOptions(command)
             .Select(c => c.CommandName)
-            //.Concat(TerminalCommand.GetClassAutocompletes(command))
             .ToArray();
 
         if (options.Length == 0)
@@ -189,7 +196,7 @@ public class UniConsole : MonoBehaviour
                 continue;
 
             object result = command.Method.Invoke(null, parameters);
-            TerminalLog(commandToExecute, result ?? "");
+            TerminalLog(commandToExecute, result ?? config.VoidCommandFeedback);
 
             OnCommandSubmitted?.Invoke(command);
 
@@ -234,23 +241,21 @@ public class UniConsole : MonoBehaviour
 
     private void Log(object message)
     {
-        logText.text += message + "\n";
+        logText.text += $"<color={config.MessageColor.ToTMPString()}>{message}</color>\n";
     }
 
     private void LogWarning(object message)
     {
-        Log("<color=\"yellow\">" + message + "</color>");
+        Log($"<color={config.WarningColor.ToTMPString()}>{message}</color>");
     }
 
     private void LogError(object message)
     {
-        Log("<color=\"red\">" + message + "</color>");
+        Log($"<color={config.ErrorColor.ToTMPString()}>{message}</color>");
     }
 
     [Command("Clears the console")]
-    public static void Clear()
-    {
-    }
+    public static void Clear() { }
 
     [Command("Prints a manual for a specific command")]
     public static string Help(string commandName)
@@ -304,7 +309,7 @@ public class UniConsole : MonoBehaviour
             : $"{command.Name} {parameters}";
     }
 
-    [Command("Exits the application")]
+    [Command("Exits the application using Application.Quit()")]
     public static void Exit()
     {
         Application.Quit();

@@ -5,7 +5,7 @@ using System.Reflection;
 
 public static class Reflector
 {
-    private const BindingFlags Flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    private static BindingFlags Flags = BindingFlags.Static | BindingFlags.Public;
     private static TerminalCommand[] _commands = { };
     private static Type[] _classes = { };
     
@@ -17,7 +17,7 @@ public static class Reflector
         {
             if (!initialized)
             {
-                UpdateCommandCache();
+                throw new InvalidOperationException("The command cache has not been initialized yet. Call UpdateCommandCache() first.");
             }
             return _commands;
         }
@@ -29,7 +29,7 @@ public static class Reflector
         {
             if (!initialized)
             {
-                UpdateCommandCache();
+                throw new InvalidOperationException("The command cache has not been initialized yet. Call UpdateCommandCache() first.");
             }
             return _classes;
         }
@@ -39,8 +39,13 @@ public static class Reflector
     /// <summary>
     /// Finds all static methods with the command attribute in the assembly. Available through the Commands property
     /// </summary>
-    public static void UpdateCommandCache()
+    public static void UpdateCommandCache(bool allowPrivateCommands = false)
     {
+        if (allowPrivateCommands)
+        {
+            Flags |= BindingFlags.NonPublic;
+        }
+        
         // Get all classes in the assembly
         var types = Assembly.GetExecutingAssembly().GetTypes();
         var methods = new List<TerminalCommand>();

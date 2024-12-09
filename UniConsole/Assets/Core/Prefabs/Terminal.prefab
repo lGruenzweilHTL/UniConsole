@@ -846,6 +846,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b07aa0ef778847129f8346d65bd9f7da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: e4a1e533a0c5d16bf88897cb930c6331, type: 2}
   logText: {fileID: 4598211275250243926}
   inputField: {fileID: 651771659970323352}
   OnCommandSubmitAttempted:
@@ -857,7 +858,7 @@ MonoBehaviour:
   OnTerminalCleared:
     m_PersistentCalls:
       m_Calls: []
-  OnTerminalAwake:
+  OnTerminalEnabled:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &8546676869467862640
