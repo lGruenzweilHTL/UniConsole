@@ -20,4 +20,7 @@ public class UniConsoleConfigScriptableObject : ScriptableObject
     
     [Tooltip("The feedback message when a command with no return value is executed successfully")]
     public string VoidCommandFeedback = "Command executed successfully";
+    
+    [Tooltip("Separator for rendering collections")]
+    public string CollectionSeparator = ", ";
 }

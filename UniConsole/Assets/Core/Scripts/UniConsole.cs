@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,10 +11,9 @@ using UnityEngine.SceneManagement;
 public class UniConsole : MonoBehaviour
 {
     private const string HELP_TEXT = "Type 'help' for a list of commands";
-    
+
     [SerializeField] private UniConsoleConfigScriptableObject config;
-    [Space]
-    [SerializeField] private TMP_Text logText;
+    [Space] [SerializeField] private TMP_Text logText;
     [SerializeField] private TMP_InputField inputField;
 
     private readonly List<string> commandHistory = new();
@@ -27,7 +27,7 @@ public class UniConsole : MonoBehaviour
     private void Awake()
     {
         Reflector.UpdateCommandCache(config.AllowPrivateCommands);
-        
+
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
         OnTerminalCleared.AddListener(() =>
         {
@@ -173,7 +173,7 @@ public class UniConsole : MonoBehaviour
             }
 
             // Parse parameters
-            object[] parameters = {};
+            object[] parameters = { };
             try
             {
                 parameters = ParseParameters(commandParts[1..], command.Method);
@@ -185,7 +185,7 @@ public class UniConsole : MonoBehaviour
             }
 
             // Everything is correct, actually execute the command
-            
+
             if (expectedParameters.Length == 0) // No parameters, needs null to work correctly
                 expectedParameters = null;
 
@@ -196,7 +196,7 @@ public class UniConsole : MonoBehaviour
                 continue;
 
             object result = command.Method.Invoke(null, parameters);
-            TerminalLog(commandToExecute, result ?? config.VoidCommandFeedback);
+            TerminalLog(commandToExecute, GetParsedResult(result));
 
             OnCommandSubmitted?.Invoke(command);
 
@@ -205,6 +205,23 @@ public class UniConsole : MonoBehaviour
         }
 
         Log(commandToExecute);
+    }
+
+    private string GetParsedResult(object result)
+    {
+        if (result == null)
+            return config.VoidCommandFeedback;
+        
+        if (result is string str)
+            return str;
+
+        if (result.GetType().IsArray && result.GetType().GetArrayRank() > 1)
+            throw new NotSupportedException("Multi-dimensional arrays are not supported");
+        
+        if (result is IEnumerable collection)
+            return string.Join(config.CollectionSeparator, collection.Cast<object>());
+
+        return result.ToString();
     }
 
     private object[] ParseParameters(string[] parameters, MethodInfo method)
@@ -241,21 +258,23 @@ public class UniConsole : MonoBehaviour
 
     private void Log(object message)
     {
-        logText.text += $"<color={config.MessageColor.ToTMPString()}>{message}</color>\n";
+        logText.text += $"<color={config.MessageColor.ToTMPColorCode()}>{message}</color>\n";
     }
 
     private void LogWarning(object message)
     {
-        Log($"<color={config.WarningColor.ToTMPString()}>{message}</color>");
+        Log($"<color={config.WarningColor.ToTMPColorCode()}>{message}</color>");
     }
 
     private void LogError(object message)
     {
-        Log($"<color={config.ErrorColor.ToTMPString()}>{message}</color>");
+        Log($"<color={config.ErrorColor.ToTMPColorCode()}>{message}</color>");
     }
 
     [Command("Clears the console")]
-    public static void Clear() { }
+    public static void Clear()
+    {
+    }
 
     [Command("Prints a manual for a specific command")]
     public static string Help(string commandName)
