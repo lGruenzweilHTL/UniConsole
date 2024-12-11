@@ -7,31 +7,33 @@ public static class Reflector
 {
     private static BindingFlags Flags = BindingFlags.Static | BindingFlags.Public;
     private static TerminalCommand[] _commands = { };
-    
+
     private static bool initialized = false;
-    
+
     public static TerminalCommand[] Commands
     {
         get
         {
             if (!initialized)
             {
-                throw new InvalidOperationException("The command cache has not been initialized yet. Call UpdateCommandCache() first.");
+                throw new InvalidOperationException(
+                    "The command cache has not been initialized yet. Call UpdateCommandCache() first.");
             }
+
             return _commands;
         }
     }
-    
+
     /// <summary>
     /// Finds all static methods with the command attribute in the assembly. Available through the Commands property
     /// </summary>
     public static void UpdateCommandCache(bool allowPrivateCommands = false)
     {
         if (allowPrivateCommands)
-        {
             Flags |= BindingFlags.NonPublic;
-        }
-        
+        else
+            Flags &= ~BindingFlags.NonPublic;
+
         // Get all classes in the assembly
         var types = Assembly.GetExecutingAssembly().GetTypes();
         var methods = new List<TerminalCommand>();
@@ -47,9 +49,9 @@ public static class Reflector
                 methods.Add(new TerminalCommand(commandAttribute.Name, type, method));
             }
         }
-        
+
         _commands = methods.ToArray();
-        
+
         initialized = true;
         ValidateCommands();
     }
@@ -61,8 +63,9 @@ public static class Reflector
     /// <exception cref="InvalidOperationException"></exception>
     private static void ValidateCommands()
     {
-        if (!CommandsAreValid(out var cmd)) 
-            throw new InvalidOperationException($"The command {cmd} is invalid. Command names must be alphanumeric and unique.");
+        if (!CommandsAreValid(out var cmd))
+            throw new InvalidOperationException(
+                $"The command {cmd} is invalid. Command names must be alphanumeric and unique.");
     }
 
     private static bool CommandsAreValid(out string cmd)
@@ -75,6 +78,7 @@ public static class Reflector
                 cmd = UnescapeString(command.Name);
                 return false;
             }
+
             commands.Add(command);
         }
 
