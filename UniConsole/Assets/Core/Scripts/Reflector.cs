@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 public static class Reflector
 {
@@ -56,46 +55,41 @@ public static class Reflector
     }
 
     /// <summary>
-    /// Checks, if every command has a unique name
+    /// Checks, if every command has a unique name and validates the individual command names.
+    /// Command names must be alphanumeric
     /// </summary>
     /// <exception cref="InvalidOperationException"></exception>
     private static void ValidateCommands()
     {
-        if (!CommandsAreValid()) 
-            throw new InvalidOperationException("Commands are not valid. Make sure every command has a unique name.");
+        if (!CommandsAreValid(out var cmd)) 
+            throw new InvalidOperationException($"The command {cmd} is invalid. Command names must be alphanumeric and unique.");
     }
 
-    private static bool CommandsAreValid()
+    private static bool CommandsAreValid(out string cmd)
     {
         var commands = new List<TerminalCommand>();
         foreach (var command in Commands)
         {
-            bool isValid = ValidateCommandName(command.Name, out var reason);
-            if (commands.Contains(command))
+            if (!ValidateCommandName(command.Name) || commands.Contains(command))
             {
-                isValid = false;
-                reason = "Commands can not have the same name and the same parameters";
-            }
-            if (!isValid)
-            {
-                Debug.Log($"Invalid command: {command.Name} because {reason}");
+                cmd = UnescapeString(command.Name);
                 return false;
             }
             commands.Add(command);
         }
 
+        cmd = null;
         return true;
     }
 
-    private static bool ValidateCommandName(string name, out string reason)
+    private static string UnescapeString(string name)
     {
-        if (name.Contains(' '))
-        {
-            reason = "Name can not contain white space";
-            return false;
-        }
+        // Unescape every character that is not alphanumeric
+        return string.Join("", name.Where(char.IsLetterOrDigit));
+    }
 
-        reason = null;
-        return true;
+    private static bool ValidateCommandName(string name)
+    {
+        return name.All(char.IsLetterOrDigit);
     }
 }
