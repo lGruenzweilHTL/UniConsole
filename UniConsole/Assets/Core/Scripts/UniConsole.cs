@@ -219,7 +219,7 @@ public class UniConsole : MonoBehaviour
             throw new NotSupportedException("Multi-dimensional arrays are not supported");
         
         if (result is IEnumerable collection)
-            return string.Join(config.CollectionSeparator, collection.Cast<object>());
+            return string.Join(config.CollectionSeparatorOutput, collection.Cast<object>());
 
         return result.ToString();
     }
@@ -231,15 +231,29 @@ public class UniConsole : MonoBehaviour
 
         object[] parsedParameters = new object[parameters.Length];
         Type[] targetTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
-
         for (var i = 0; i < parsedParameters.Length; i++)
         {
             parsedParameters[i] = targetTypes[i].IsEnum
                 ? Enum.Parse(targetTypes[i], parameters[i], true)
+                : targetTypes[i].IsArray
+                    ? ParseArray(parameters[i], targetTypes[i].GetElementType())
                 : Convert.ChangeType(parameters[i], targetTypes[i]);
         }
 
         return parsedParameters;
+    }
+
+    private object ParseArray(string param, Type elementType)
+    {
+        var inputArray = param.Split(config.CollectionSeparatorInput);
+        Array result = Array.CreateInstance(elementType, inputArray.Length);
+        
+        for (int i = 0; i < inputArray.Length; i++)
+        {
+            result.SetValue(Convert.ChangeType(inputArray[i], elementType), i);
+        }
+        
+        return result;
     }
 
     private void TerminalLog(object command, object result, LogType logType = LogType.Message)

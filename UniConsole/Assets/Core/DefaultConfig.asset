@@ -19,3 +19,5 @@ MonoBehaviour:
   PrintHelpTextOnClear: 1
   AllowPrivateCommands: 0
   VoidCommandFeedback: Command executed successfully
+  CollectionSeparatorOutput: ', '
+  CollectionSeparatorInput: 44

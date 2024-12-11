@@ -1,3 +1,5 @@
+using System.Linq;
+
 public static class TestingScript
 {
     [Command("Prints test things")]
@@ -61,6 +63,19 @@ public static class TestingScript
 
     [Command]
     public static System.Tuple<int, int> Swap(int a, int b) => new(b, a);
+
+    [Command]
+    public static int Sum(int[] arr)
+    {
+        return arr.Sum();
+    }
+    
+    [Command]
+    public static string JoinArray(string[] arr, int num)
+    {
+        if (num < 0 || num > arr.Length) return "Invalid number";
+        return string.Join(", ", arr[..num]);
+    }
 }
 
 

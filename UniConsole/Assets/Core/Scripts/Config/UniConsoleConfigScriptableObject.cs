@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "UniConsole/Config", fileName = "New UniConsoleConfig")]
 public class UniConsoleConfigScriptableObject : ScriptableObject
@@ -21,6 +22,7 @@ public class UniConsoleConfigScriptableObject : ScriptableObject
     [Tooltip("The feedback message when a command with no return value is executed successfully")]
     public string VoidCommandFeedback = "Command executed successfully";
     
-    [Tooltip("Separator for rendering collections")]
-    public string CollectionSeparator = ", ";
+    [FormerlySerializedAs("CollectionSeparator")] [Tooltip("Separator for rendering collections")]
+    public string CollectionSeparatorOutput = ", ";
+    public char CollectionSeparatorInput = ',';
 }
