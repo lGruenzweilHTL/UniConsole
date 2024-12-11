@@ -26,8 +26,6 @@ public class UniConsole : MonoBehaviour
 
     private void Awake()
     {
-        Reflector.UpdateCommandCache(config.AllowPrivateCommands);
-
         inputField.onSubmit.AddListener(OnInputFieldSubmit);
         OnTerminalCleared.AddListener(() =>
         {
@@ -35,10 +33,23 @@ public class UniConsole : MonoBehaviour
         });
         OnTerminalEnabled.AddListener(() =>
         {
-            if (config.PrintHelpTextOnEnable) Log(HELP_TEXT);
+            if (config.ClearOnEnable)
+            {
+                ClearTerminal();
+            }
+            else
+            {
+                if (config.PrintHelpTextOnEnable) Log(HELP_TEXT);
+            }
         });
+        
+        Application.logMessageReceived += HandleDebugLog;
+        Reflector.UpdateCommandCache(config.AllowPrivateCommands);
+    }
 
-        OnTerminalCleared?.Invoke();
+    private void OnEnable()
+    {
+        OnTerminalEnabled?.Invoke();
     }
 
     private void Update()
@@ -142,8 +153,7 @@ public class UniConsole : MonoBehaviour
 
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
         {
-            logText.text = "";
-            OnTerminalCleared?.Invoke();
+            ClearTerminal();
             return;
         }
 
@@ -165,7 +175,7 @@ public class UniConsole : MonoBehaviour
             }
             catch (Exception)
             {
-                TerminalLog(commandToExecute, "Could not Parse parameters", LogType.Error);
+                TerminalLog(commandToExecute, "Could not Parse parameters", UniConsoleLogType.Error);
                 return;
             }
 
@@ -240,20 +250,49 @@ public class UniConsole : MonoBehaviour
         
         return result;
     }
+    
+    private void HandleDebugLog(string log, string stackTrace, LogType type)
+    {
+        bool enabled = gameObject.activeInHierarchy && this.enabled;
+        if (!config.InterceptWhenDisabled && !enabled)
+            return;
 
-    private void TerminalLog(object command, object result, LogType logType = LogType.Message)
+        if (type == LogType.Log && config.InterceptMessages)
+        {
+            Log(log);
+            if (config.IncludeStackTraceOnMessage) Log(stackTrace);
+            return;
+        }
+
+        if (type == LogType.Warning && config.InterceptWarnings)
+        {
+            LogWarning(log);
+            if (config.IncludeStackTraceOnErrors) LogWarning(stackTrace);
+            return;
+        }
+
+        if (type is LogType.Error or LogType.Exception && config.InterceptErrors)
+        {
+            LogError(log);
+            if (config.IncludeStackTraceOnErrors) LogError(stackTrace);
+        }
+
+        
+    }
+
+    private void TerminalLog(object command, object result, UniConsoleLogType uniConsoleLogType = UniConsoleLogType.Message)
     {
         string log = $"> {command}\n{result}";
 
-        switch (logType)
+        switch (uniConsoleLogType)
         {
-            case LogType.Message:
+            case UniConsoleLogType.Message:
                 Log(log);
                 break;
-            case LogType.Warning:
+            case UniConsoleLogType.Warning:
                 LogWarning(log);
                 break;
-            case LogType.Error:
+            case UniConsoleLogType.Error:
                 LogError(log);
                 break;
             default:
@@ -280,6 +319,16 @@ public class UniConsole : MonoBehaviour
     public static void Clear()
     {
         // handled in ExecuteCommand because it needs the reference to the logText
+    }
+
+    private void ClearTerminal()
+    {
+        ClearTerminalNoInvoke();
+        OnTerminalCleared?.Invoke();
+    }
+    private void ClearTerminalNoInvoke()
+    {
+        logText.text = "";
     }
 
     [Command("help", "displays the description of a command")]

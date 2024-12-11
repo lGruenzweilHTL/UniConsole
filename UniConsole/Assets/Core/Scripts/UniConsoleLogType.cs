@@ -1,4 +1,4 @@
-public enum LogType
+public enum UniConsoleLogType
 {
     Message, Warning, Error
 }

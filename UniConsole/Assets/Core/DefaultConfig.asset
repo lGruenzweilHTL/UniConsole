@@ -18,6 +18,12 @@ MonoBehaviour:
   PrintHelpTextOnEnable: 1
   PrintHelpTextOnClear: 1
   AllowPrivateCommands: 0
+  InterceptWhenDisabled: 0
+  InterceptMessages: 0
+  InterceptWarnings: 1
+  InterceptErrors: 1
+  IncludeStackTraceOnMessage: 0
+  IncludeStackTraceOnErrors: 1
   VoidCommandFeedback: Command executed successfully
   CollectionSeparatorOutput: ', '
   CollectionSeparatorInput: 44
