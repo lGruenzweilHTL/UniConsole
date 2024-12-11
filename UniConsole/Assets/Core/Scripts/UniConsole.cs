@@ -315,7 +315,7 @@ public class UniConsole : MonoBehaviour
         // Recursively print the hierarchy
         string GetHierarchy(Transform transform, int depth = 0)
         {
-            string indent = new string('-', depth * 2);
+            string indent = new string(' ', depth * 2);
             string result = indent + transform.name + "\n";
 
             for (int i = 0; i < transform.childCount; i++)
