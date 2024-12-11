@@ -67,9 +67,12 @@ public class UniConsole : MonoBehaviour
         string[] parts = command.Split(' ');
         command = parts[^1];
 
-        var options = TerminalCommand.GetAutocompleteOptions(command)
-            .Select(c => c.CommandName)
+        var autocompletes = TerminalCommand.GetAutocompleteOptions(command);
+        var options = autocompletes
+            .Select(c => c.Name)
             .ToArray();
+        var formatted = autocompletes
+            .Select(c => c.ToString());
 
         if (options.Length == 0)
             return;
@@ -88,7 +91,7 @@ public class UniConsole : MonoBehaviour
             inputField.caretPosition = complete.Length;
         }
         else
-            TerminalLog(command, string.Join(", ", options));
+            TerminalLog(command, string.Join(", ", formatted));
     }
 
     private static int GetEarliestDifferenceIndex(string[] strings)
@@ -146,31 +149,13 @@ public class UniConsole : MonoBehaviour
 
         foreach (var command in available)
         {
-            var expectedParameters = command.Method.GetParameters();
-
-            // Not the correct command name
-            if (!command.GetAllPossibleNames().Contains(commandName, StringComparer.OrdinalIgnoreCase))
+            if (!command.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             // Not the correct parameter count
+            var expectedParameters = command.Method.GetParameters();
             if (commandParts.Length - 1 != expectedParameters.Length)
                 continue;
-
-            // Check for ambiguous commands
-            // When a command name is ambiguous, check if the full name has already been specified
-            if (command.IsAmbiguous)
-            {
-                if (commandName.Equals(command.Name,
-                        StringComparison.OrdinalIgnoreCase)) // If full name is not specified
-                {
-                    // Print all possibilities of the command
-                    var possibilities =
-                        string.Join(", ", available.Where(c => c.Equals(command)).Select(GetHelpString));
-                    TerminalLog(commandToExecute, $"Ambiguous command!\nPossible commands: {possibilities}",
-                        LogType.Warning);
-                    return;
-                }
-            }
 
             // Parse parameters
             object[] parameters = { };
@@ -260,14 +245,20 @@ public class UniConsole : MonoBehaviour
     {
         string log = $"> {command}\n{result}";
 
-        if (logType == LogType.Message)
-            Log(log);
-        else if (logType == LogType.Warning)
-            LogWarning(log);
-        else if (logType == LogType.Error)
-            LogError(log);
-        else
-            throw new ArgumentOutOfRangeException();
+        switch (logType)
+        {
+            case LogType.Message:
+                Log(log);
+                break;
+            case LogType.Warning:
+                LogWarning(log);
+                break;
+            case LogType.Error:
+                LogError(log);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     private void Log(object message)
@@ -285,31 +276,32 @@ public class UniConsole : MonoBehaviour
         Log($"<color={config.ErrorColor.ToTMPColorCode()}>{message}</color>");
     }
 
-    [Command("Clears the console")]
+    [Command("clear", "clears the console")]
     public static void Clear()
     {
+        // handled in ExecuteCommand because it needs the reference to the logText
     }
 
-    [Command("Prints a manual for a specific command")]
+    [Command("help", "displays the description of a command")]
     public static string Help(string commandName)
         => string.Join('\n', Reflector.Commands.Where(
                 c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase))
             .Select(cmd =>
             {
                 string description = cmd.Method.GetCustomAttribute<CommandAttribute>().Description;
-                string name = GetHelpString(cmd);
+                string name = cmd.ToString();
 
                 return $"{name}\n\t{description}";
             }));
 
 
-    [Command("Prints all possible commands")]
+    [Command("help", "lists all commands")]
     public static string Help()
         => "Available Commands:\n" + string.Join("\n",
             Reflector.Commands
-                .Select(GetHelpString));
+                .Select(c => c.ToString()));
 
-    [Command("Prints the unity project hierarchy of the active scene")]
+    [Command("hierarchy", "prints the unity project hierarchy")]
     public static string PrintHierarchy()
     {
         string result = "";
@@ -333,16 +325,7 @@ public class UniConsole : MonoBehaviour
         }
     }
 
-    private static string GetHelpString(TerminalCommand command)
-    {
-        string parameters = string.Join(" ", command.Method.GetParameters().Select(p => p.ParameterType.Name));
-
-        return command.IsAmbiguous
-            ? $"{command.Class.FullName}.{command.Name} {parameters}"
-            : $"{command.Name} {parameters}";
-    }
-
-    [Command("Exits the application using Application.Quit()")]
+    [Command("exit", "leaves the game using Application.Quit()")]
     public static void Exit()
     {
         Application.Quit();
