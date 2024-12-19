@@ -7,6 +7,7 @@ public static class Reflector
 {
     private static BindingFlags Flags = BindingFlags.Static | BindingFlags.Public;
     private static TerminalCommand[] _commands = { };
+    private static readonly Func<char, bool> IsAllowedChar = c => char.IsLetterOrDigit(c) || c == '-';
 
     private static bool initialized = false;
 
@@ -88,12 +89,12 @@ public static class Reflector
 
     private static string UnescapeString(string name)
     {
-        // Unescape every character that is not alphanumeric
-        return string.Join("", name.Where(char.IsLetterOrDigit));
+        // Delete every character that is not alphanumeric
+        return string.Join("", name.Where(IsAllowedChar));
     }
 
     private static bool ValidateCommandName(string name)
     {
-        return name.All(char.IsLetterOrDigit);
+        return name.All(IsAllowedChar);
     }
 }

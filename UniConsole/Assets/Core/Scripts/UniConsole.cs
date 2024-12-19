@@ -148,7 +148,7 @@ public class UniConsole : MonoBehaviour
         OnCommandSubmitAttempted?.Invoke(commandToExecute);
 
         var available = Reflector.Commands;
-        string[] commandParts = commandToExecute.Split(' ');
+        string[] commandParts = SplitCommand(commandToExecute);
         string commandName = commandParts[0];
 
         if (commandName.Equals("clear", StringComparison.OrdinalIgnoreCase))
@@ -200,6 +200,40 @@ public class UniConsole : MonoBehaviour
         }
 
         Log(commandToExecute);
+    }
+    
+    private static string[] SplitCommand(string command)
+    {
+        var result = new List<string>();
+        var current = new List<char>();
+        bool inQuotes = false;
+
+        foreach (char c in command)
+        {
+            if (c == '\"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c == ' ' && !inQuotes)
+            {
+                if (current.Count > 0)
+                {
+                    result.Add(new string(current.ToArray()));
+                    current.Clear();
+                }
+            }
+            else
+            {
+                current.Add(c);
+            }
+        }
+
+        if (current.Count > 0)
+        {
+            result.Add(new string(current.ToArray()));
+        }
+
+        return result.ToArray();
     }
 
     private string GetParsedResult(object result)
