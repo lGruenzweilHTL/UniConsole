@@ -1,5 +1,8 @@
 # UniConsole
 
+## Version Details
+- Recommended Unity Version: 2022.3.41f1
+
 ## What?
 `UniConsole` is a basic debugging console for unity inspired by [QuantumConsole](https://assetstore.unity.com/packages/tools/utilities/quantum-console-211046).
 It is designed to be a free alternative with less features.
@@ -9,9 +12,9 @@ I needed an Admin Console for the Unity Scene View.
 
 ## Planned features
 - [ ] Optional parameter support
-- [ ] Fix collection parameters
+- [x] Fix collection parameters
 - [ ] Add better parsing support
-- [ ] Customization
+- [x] Customization
 
 ## Installation
 
